@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>게임 골드 시세</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0f0e;--bg2:#161614;--bg3:#1e1e1b;--bg4:#252520;
+  --b:rgba(255,255,255,0.07);--b2:rgba(255,255,255,0.14);--b3:rgba(255,255,255,0.22);
+  --t1:#f0efe8;--t2:#9a9990;--t3:#5a5a55;
+  --accent:#d4a843;--accent2:#a07d28;
+  --green:#3db87a;--green-bg:rgba(61,184,122,0.1);
+  --red:#e05c5c;--red-bg:rgba(224,92,92,0.1);
+  --blue:#5b9cf6;--blue-bg:rgba(91,156,246,0.1);
+  --mono:'DM Mono',monospace;--sans:'Noto Sans KR',sans-serif;
+  --r:10px;--rl:14px
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--t1);min-height:100vh;padding:24px 16px;font-size:14px}
+.page{max-width:860px;margin:0 auto}
+
+/* TOP */
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:10px}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:17px}
+.logo-text{font-size:16px;font-weight:600}
+.badges{display:flex;gap:8px;flex-wrap:wrap}
+.badge{display:flex;align-items:center;gap:6px;background:var(--bg3);border:0.5px solid var(--b2);border-radius:20px;padding:5px 12px;font-size:11px}
+.bdot{width:6px;height:6px;border-radius:50%}
+.bdot.green{background:var(--green);animation:pulse 2s infinite}
+.bdot.amber{background:var(--accent)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.bval{font-family:var(--mono);font-size:12px;color:var(--t1)}
+.blbl{color:var(--t3);font-size:11px}
+
+/* TABS */
+.tabs{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap}
+.tab{font-size:12px;font-family:var(--sans);padding:8px 16px;border-radius:var(--r);border:0.5px solid var(--b2);background:var(--bg3);color:var(--t2);cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:7px;white-space:nowrap}
+.tab:hover{background:var(--bg4);color:var(--t1)}
+.tab.active{background:var(--accent);color:#0f0f0e;border-color:var(--accent);font-weight:600}
+.tab .tag{font-size:10px;padding:1px 6px;border-radius:10px;background:rgba(0,0,0,0.2);font-weight:500}
+
+/* GAME PANEL */
+.panel{display:none}
+.panel.active{display:block}
+
+/* SUMMARY ROW */
+.summary-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.scard{background:var(--bg2);border:0.5px solid var(--b);border-radius:var(--rl);padding:14px 16px;position:relative;overflow:hidden}
+.scard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.scard.gold::before{background:linear-gradient(90deg,var(--accent),transparent)}
+.scard.green::before{background:linear-gradient(90deg,var(--green),transparent)}
+.scard.blue::before{background:linear-gradient(90deg,var(--blue),transparent)}
+.scard .sl{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.scard .sv{font-family:var(--mono);font-size:18px;font-weight:500;color:var(--t1)}
+.scard .ss{font-size:11px;color:var(--t2);font-family:var(--mono);margin-top:2px}
+
+/* LISTING TABLE */
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.section-title{font-size:12px;color:var(--t3);text-transform:uppercase;letter-spacing:.05em}
+.refresh-btn{font-size:11px;padding:4px 10px;border-radius:var(--r);border:0.5px solid var(--b2);background:transparent;color:var(--t2);cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s}
+.refresh-btn:hover{background:var(--bg3);color:var(--t1)}
+.refresh-btn.spinning .icon{animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.table-wrap{background:var(--bg2);border:0.5px solid var(--b);border-radius:var(--rl);overflow:hidden;margin-bottom:20px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{font-size:10px;color:var(--t3);font-weight:500;text-align:left;padding:10px 14px;border-bottom:0.5px solid var(--b);text-transform:uppercase;letter-spacing:.04em;background:var(--bg3);white-space:nowrap}
+thead th:last-child,thead th:nth-child(3){text-align:right}
+tbody tr{border-bottom:0.5px solid var(--b);transition:background .1s;cursor:pointer}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:rgba(255,255,255,0.03)}
+tbody td{padding:10px 14px;color:var(--t2);font-family:var(--mono);white-space:nowrap}
+tbody td.seller{font-family:var(--sans);color:var(--t1);font-size:12px}
+tbody td.price-krw{color:var(--accent);font-weight:500;text-align:right}
+tbody td.quantity{text-align:right}
+tbody td.action{text-align:right}
+.cheapest-badge{font-size:9px;background:rgba(61,184,122,0.15);color:var(--green);border:0.5px solid rgba(61,184,122,0.3);padding:1px 6px;border-radius:10px;margin-left:6px;vertical-align:middle}
+.link-btn{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:3px 8px;border-radius:6px;background:var(--bg3);border:0.5px solid var(--b2);color:var(--t2);text-decoration:none;transition:all .15s;font-family:var(--sans)}
+.link-btn:hover{background:var(--bg4);color:var(--t1);border-color:var(--b3)}
+.status-row{padding:20px;text-align:center;color:var(--t3);font-size:13px}
+.loading-spin{display:inline-block;width:16px;height:16px;border:2px solid var(--b2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
+
+/* CALCULATOR */
+.calc-card{background:var(--bg2);border:0.5px solid var(--b);border-radius:var(--rl);padding:18px 20px;margin-bottom:20px}
+.calc-title{font-size:12px;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px}
+.calc-grid{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:flex-end;margin-bottom:14px}
+.fgrp{display:flex;flex-direction:column;gap:5px}
+.fgrp label{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.04em}
+input[type=number],input[type=text]{font-size:13px;font-family:var(--mono);padding:8px 12px;border:0.5px solid var(--b2);border-radius:var(--r);background:var(--bg3);color:var(--t1);outline:none;transition:border-color .15s,box-shadow .15s;width:100%}
+input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(212,168,67,0.15)}
+input::placeholder{color:var(--t3)}
+.calc-btn{font-size:12px;font-family:var(--sans);padding:8px 18px;border-radius:var(--r);border:none;background:var(--accent);color:#0f0f0e;cursor:pointer;font-weight:600;white-space:nowrap;height:38px}
+.calc-btn:hover{background:#e0b650}
+.calc-result{background:var(--bg3);border:0.5px solid var(--b);border-radius:var(--r);padding:14px 16px;display:none}
+.calc-result.show{display:block}
+.result-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:0.5px solid var(--b);font-size:13px}
+.result-row:last-child{border-bottom:none;padding-top:10px;margin-top:4px}
+.result-row .rl{color:var(--t2)}
+.result-row .rv{font-family:var(--mono);color:var(--t1);font-weight:500}
+.result-row .rv.total{color:var(--accent);font-size:16px}
+.result-row .rv.green{color:var(--green)}
+
+/* OPEN LINK ROW */
+.open-all{margin-bottom:20px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.open-all-btn{font-size:11px;padding:6px 14px;border-radius:var(--r);border:0.5px solid var(--b2);background:var(--bg3);color:var(--t1);cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none;transition:all .15s}
+.open-all-btn:hover{background:var(--bg4);border-color:var(--b3)}
+.updated-at{font-size:11px;color:var(--t3);margin-left:auto}
+
+/* MOBILE */
+@media(max-width:600px){
+  .summary-row{grid-template-columns:1fr 1fr}
+  .calc-grid{grid-template-columns:1fr 1fr;grid-template-rows:auto auto}
+  .calc-btn{grid-column:1/-1}
+  body{padding:14px 10px}
+  thead th:nth-child(2){display:none}
+  tbody td:nth-child(2){display:none}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="logo">
+      <div class="logo-icon">⚔️</div>
+      <span class="logo-text">게임 골드 시세</span>
+    </div>
+    <div class="badges">
+      <div class="badge">
+        <span class="bdot green"></span>
+        <span class="blbl">USD/KRW</span>
+        <span class="bval" id="fx-val">로딩중...</span>
+      </div>
+      <div class="badge">
+        <span class="bdot amber" id="status-dot"></span>
+        <span class="bval" id="status-lbl">대기중</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('le')" id="tab-le">
+      <span>🗡️ 라스트에포크</span><span class="tag">골드</span>
+    </div>
+    <div class="tab" onclick="switchTab('poe2')" id="tab-poe2">
+      <span>💀 POE2</span><span class="tag">골드</span>
+    </div>
+    <div class="tab" onclick="switchTab('poe')" id="tab-poe">
+      <span>🌀 POE</span><span class="tag">시즌 골드</span>
+    </div>
+  </div>
+
+  <!-- PANELS -->
+  <div id="panel-le" class="panel active"></div>
+  <div id="panel-poe2" class="panel"></div>
+  <div id="panel-poe" class="panel"></div>
+
+</div>
+
+<script>
+const GAMES = {
+  le: {
+    name: '라스트에포크',
+    unit: '골드',
+    url: 'https://m.itemmania.com/sell/list.html?search_game=5489&search_goods=money',
+    color: '#d4a843',
+    emoji: '🗡️'
+  },
+  poe2: {
+    name: 'POE2',
+    unit: '골드',
+    url: 'https://m.itemmania.com/sell/list.html?search_game=5166&search_goods=money',
+    color: '#5b9cf6',
+    emoji: '💀'
+  },
+  poe: {
+    name: 'POE 시즌',
+    unit: '골드',
+    url: 'https://m.itemmania.com/sell/list_search.html?search_game=1835&search_server=10196&search_goods=money',
+    color: '#b87ad4',
+    emoji: '🌀'
+  }
+};
+
+let cache = {};
+let usdKrw = 1380;
+let activeTab = 'le';
+
+/* ── EXCHANGE RATE ── */
+async function fetchRate(){
+  try{
+    const r = await fetch('https://open.er-api.com/v6/latest/USD');
+    const j = await r.json();
+    if(j.rates?.KRW){
+      usdKrw = j.rates.KRW;
+      document.getElementById('fx-val').textContent = Math.round(usdKrw).toLocaleString('ko-KR')+'원';
+    }
+  }catch(e){}
+}
+
+/* ── FETCH ITEMMANIA ── */
+async function fetchListings(gameKey){
+  const game = GAMES[gameKey];
+  setStatus('loading', '데이터 로딩중...');
+
+  const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(game.url);
+
+  try{
+    const res = await fetch(proxyUrl);
+    if(!res.ok) throw new Error('프록시 응답 오류');
+    const json = await res.json();
+    const html = json.contents;
+    if(!html) throw new Error('빈 응답');
+
+    const items = parseItemmania(html, game.url);
+    cache[gameKey] = {items, time: new Date()};
+    setStatus('ok', '업데이트 완료');
+    return items;
+  }catch(e){
+    setStatus('error', '로딩 실패');
+    return null;
+  }
+}
+
+/* ── PARSE HTML ── */
+function parseItemmania(html, baseUrl){
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  const items = [];
+
+  // itemmania 모바일 셀렉터 시도 (여러 패턴 시도)
+  const selectors = [
+    '.sell_list li', '.list_item', '.item_list li',
+    '.goods_list li', 'ul.list li', '.board_list li',
+    'table tbody tr', '.sell_item'
+  ];
+
+  let found = false;
+  for(const sel of selectors){
+    const els = doc.querySelectorAll(sel);
+    if(els.length > 1){
+      els.forEach(el => {
+        const item = parseItem(el, baseUrl);
+        if(item) items.push(item);
+      });
+      if(items.length > 0){ found = true; break; }
+    }
+  }
+
+  // 파싱 실패 시 텍스트에서 직접 추출
+  if(!found || items.length === 0){
+    return extractFromText(html, baseUrl);
+  }
+
+  return items;
+}
+
+function parseItem(el, baseUrl){
+  const text = el.textContent || '';
+
+  // 가격 추출 (원화 패턴: 숫자+원 또는 숫자,숫자)
+  const priceMatch = text.match(/([0-9,]+)\s*원/);
+  // 수량 추출 (골드 패턴)
+  const qtyMatch = text.match(/([0-9,]+)\s*[Gg골]/);
+
+  if(!priceMatch) return null;
+
+  const price = parseInt(priceMatch[1].replace(/,/g,''));
+  if(price < 100 || price > 10000000) return null;
+
+  const qty = qtyMatch ? qtyMatch[1].replace(/,/g,'') : '-';
+
+  // 판매자명
+  const seller = el.querySelector('.seller, .user, .nick, .name')?.textContent?.trim()
+    || text.split('\n').find(l => l.trim().length > 1 && l.trim().length < 20 && !/[0-9,원]/.test(l))?.trim()
+    || '판매자';
+
+  // 링크
+  const linkEl = el.querySelector('a');
+  const href = linkEl?.getAttribute('href') || '';
+  const link = href.startsWith('http') ? href : ('https://m.itemmania.com' + href);
+
+  return { seller: seller.substring(0,15), qty, price, link: link || baseUrl };
+}
+
+function extractFromText(html, baseUrl){
+  // 텍스트에서 가격 패턴 직접 찾기
+  const items = [];
+  const lines = html.replace(/<[^>]+>/g,' ').split(/[\n\r]+/);
+
+  let currentSeller = '';
+  let currentQty = '';
+
+  lines.forEach(line => {
+    const clean = line.trim().replace(/\s+/g,' ');
+    if(!clean || clean.length < 2) return;
+
+    const priceMatch = clean.match(/^([0-9,]{4,})원?$/);
+    const qtyMatch = clean.match(/([0-9,]+)\s*(G|g|골드|gold)/i);
+    const sellerMatch = clean.match(/^([가-힣a-zA-Z0-9_]{2,12})$/);
+
+    if(qtyMatch) currentQty = qtyMatch[1];
+    if(sellerMatch) currentSeller = clean;
+    if(priceMatch){
+      const price = parseInt(priceMatch[1].replace(/,/g,''));
+      if(price >= 500 && price <= 5000000 && currentSeller){
+        items.push({
+          seller: currentSeller,
+          qty: currentQty || '-',
+          price,
+          link: baseUrl
+        });
+        currentSeller = '';
+        currentQty = '';
+      }
+    }
+  });
+
+  return items.length > 0 ? items : null;
+}
+
+function fmtKRW(n){ return n.toLocaleString('ko-KR')+'원'; }
+function fmtNum(n){ return parseInt(n.toString().replace(/,/g,'')).toLocaleString(); }
+
+/* ── RENDER PANEL ── */
+function renderPanel(gameKey, items){
+  const game = GAMES[gameKey];
+  const panel = document.getElementById('panel-'+gameKey);
+  const cached = cache[gameKey];
+  const timeStr = cached?.time ? cached.time.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '';
+
+  if(!items || items.length === 0){
+    panel.innerHTML = `
+      <div class="open-all">
+        <a class="open-all-btn" href="${game.url}" target="_blank">🔗 아이템매니아에서 직접 보기</a>
+        <span class="updated-at">데이터를 가져올 수 없어요. 직접 링크를 이용해주세요.</span>
+      </div>
+      ${renderCalc(gameKey, [])}`;
+    return;
+  }
+
+  // 가격순 정렬
+  items.sort((a,b) => a.price - b.price);
+
+  const minPrice = items[0].price;
+  const avgPrice = Math.round(items.reduce((s,i)=>s+i.price,0)/items.length);
+  const count = items.length;
+
+  const rows = items.slice(0,20).map((item,idx) => {
+    const isCheapest = idx === 0;
+    return `<tr onclick="window.open('${item.link}','_blank')">
+      <td class="seller">${item.seller}${isCheapest?'<span class="cheapest-badge">최저가</span>':''}</td>
+      <td class="quantity">${item.qty !== '-' ? fmtNum(item.qty) : '-'}</td>
+      <td class="price-krw">${fmtKRW(item.price)}</td>
+      <td class="action"><a class="link-btn" href="${item.link}" target="_blank" onclick="event.stopPropagation()">구매 →</a></td>
+    </tr>`;
+  }).join('');
+
+  panel.innerHTML = `
+    <div class="summary-row">
+      <div class="scard gold">
+        <div class="sl">최저가</div>
+        <div class="sv">${fmtKRW(minPrice)}</div>
+        <div class="ss">가장 저렴</div>
+      </div>
+      <div class="scard green">
+        <div class="sl">평균가</div>
+        <div class="sv">${fmtKRW(avgPrice)}</div>
+        <div class="ss">현재 평균</div>
+      </div>
+      <div class="scard blue">
+        <div class="sl">판매자 수</div>
+        <div class="sv">${count}명</div>
+        <div class="ss">현재 등록</div>
+      </div>
+    </div>
+
+    <div class="open-all">
+      <a class="open-all-btn" href="${game.url}" target="_blank">🔗 아이템매니아 전체 목록 보기</a>
+      <span class="updated-at">⟳ ${timeStr} 기준</span>
+    </div>
+
+    <div class="table-wrap">
+      <div class="section-head" style="padding:10px 14px 0">
+        <span class="section-title">판매자 목록 (가격 낮은 순)</span>
+        <button class="refresh-btn" onclick="refreshTab('${gameKey}')">
+          <span class="icon">⟳</span> 새로고침
+        </button>
+      </div>
+      <table>
+        <thead><tr>
+          <th>판매자</th>
+          <th>수량</th>
+          <th>가격</th>
+          <th></th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+
+    ${renderCalc(gameKey, items)}`;
+}
+
+function renderCalc(gameKey, items){
+  const game = GAMES[gameKey];
+  return `
+    <div class="calc-card">
+      <div class="calc-title">💰 구매 비용 계산기</div>
+      <div class="calc-grid">
+        <div class="fgrp">
+          <label>원하는 골드 수량</label>
+          <input type="number" id="calc-qty-${gameKey}" placeholder="예) 100000" min="1">
+        </div>
+        <div class="fgrp">
+          <label>단가 (원/1골드) 또는 직접 입력</label>
+          <input type="number" id="calc-price-${gameKey}" placeholder="${items.length>0?items[0].price:'직접 입력'}">
+        </div>
+        <button class="calc-btn" onclick="calcCost('${gameKey}')">계산</button>
+      </div>
+      <div class="calc-result" id="calc-result-${gameKey}"></div>
+    </div>`;
+}
+
+function calcCost(gameKey){
+  const qtyEl = document.getElementById('calc-qty-'+gameKey);
+  const priceEl = document.getElementById('calc-price-'+gameKey);
+  const resultEl = document.getElementById('calc-result-'+gameKey);
+
+  const qty = parseFloat(qtyEl.value);
+  let unitPrice = parseFloat(priceEl.value);
+
+  // 단가가 없으면 최저가 사용
+  if(isNaN(unitPrice) && cache[gameKey]?.items?.length > 0){
+    const sorted = [...cache[gameKey].items].sort((a,b)=>a.price-b.price);
+    unitPrice = sorted[0].price;
+    priceEl.value = unitPrice;
+    priceEl.placeholder = unitPrice;
+  }
+
+  if(isNaN(qty)||qty<=0||isNaN(unitPrice)||unitPrice<=0){
+    alert('수량과 단가를 입력해주세요'); return;
+  }
+
+  const total = Math.round(qty * unitPrice);
+  const usd = (total / usdKrw).toFixed(2);
+
+  // 최저가 판매자 찾기
+  let bestSeller = null;
+  if(cache[gameKey]?.items?.length > 0){
+    const sorted = [...cache[gameKey].items].sort((a,b)=>a.price-b.price);
+    bestSeller = sorted[0];
+  }
+
+  resultEl.className = 'calc-result show';
+  resultEl.innerHTML = `
+    <div class="result-row"><span class="rl">골드 수량</span><span class="rv">${qty.toLocaleString('ko-KR')} G</span></div>
+    <div class="result-row"><span class="rl">단가 (1골드)</span><span class="rv">${unitPrice.toLocaleString('ko-KR')}원</span></div>
+    ${bestSeller?`<div class="result-row"><span class="rl">추천 판매자</span><span class="rv green">${bestSeller.seller} (최저가 ${fmtKRW(bestSeller.price)})</span></div>`:''}
+    <div class="result-row"><span class="rl">총 비용 (원화)</span><span class="rv total">${fmtKRW(total)}</span></div>
+    <div class="result-row"><span class="rl">총 비용 (달러)</span><span class="rv">≈ $${usd}</span></div>
+    ${bestSeller?`<div style="margin-top:12px"><a class="open-all-btn" href="${bestSeller.link}" target="_blank" style="display:inline-flex">→ 최저가 판매자 구매 페이지</a></div>`:''}`;
+}
+
+/* ── TAB & REFRESH ── */
+async function switchTab(key){
+  activeTab = key;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+key).classList.add('active');
+  document.getElementById('panel-'+key).classList.add('active');
+
+  if(!cache[key]){
+    document.getElementById('panel-'+key).innerHTML = `<div class="status-row"><span class="loading-spin"></span>아이템매니아에서 가격 정보를 가져오는 중...</div>`;
+    const items = await fetchListings(key);
+    renderPanel(key, items);
+  }
+}
+
+async function refreshTab(key){
+  const btn = document.querySelector(`#panel-${key} .refresh-btn`);
+  if(btn) btn.classList.add('spinning');
+  document.getElementById('panel-'+key).querySelector('.table-wrap .section-title').textContent = '로딩중...';
+  const items = await fetchListings(key);
+  renderPanel(key, items);
+}
+
+function setStatus(type, label){
+  const dot = document.getElementById('status-dot');
+  document.getElementById('status-lbl').textContent = label;
+  if(type==='loading'){ dot.className='bdot amber'; dot.style.animation='pulse 2s infinite'; }
+  else if(type==='ok'){ dot.className='bdot green'; dot.style.animation='pulse 2s infinite'; }
+  else { dot.className='bdot red'; dot.style.animation='none'; }
+}
+
+/* ── INIT ── */
+async function init(){
+  fetchRate();
+  // 첫 탭 바로 로딩
+  document.getElementById('panel-le').innerHTML = `<div class="status-row"><span class="loading-spin"></span>아이템매니아에서 가격 정보를 가져오는 중...</div>`;
+  const items = await fetchListings('le');
+  renderPanel('le', items);
+}
+
+init();
+</script>
+</body>
+</html>
